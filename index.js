@@ -19,12 +19,11 @@ admin.initializeApp({
 
 const db = admin.database(); // Referenca na Realtime Database
 
-// Webhook ruta za provjeru dostupnosti trenera
+// Webhook ruta za prikaz slobodnih termina trenera
 app.post('/check_trainer_availability', async (req, res) => {
   console.log('Primljen zahtjev:', req.body);
 
-  const { date, time } = req.body.queryResult.parameters;
-  const requestedDateTime = `${date}T${time}`;
+  const trainerName = req.body.queryResult.parameters.trainer; // Pretpostavljamo da se unosi ime trenera
 
   try {
     // Referenca na Firebase
@@ -32,32 +31,42 @@ app.post('/check_trainer_availability', async (req, res) => {
     const snapshot = await trainersRef.once('value');
     const trainers = snapshot.val();
 
-    let availableTrainer = null;
+    let trainer = null;
 
-    // Prolazimo kroz sve trenere iz baze
+    // Pronađite trenera prema imenu
     for (const trainerKey of Object.keys(trainers)) {
-      const trainer = trainers[trainerKey];
-      if (trainer.available && trainer.available.includes(requestedDateTime)) {
-        availableTrainer = trainer.name;
-        break; // Prekinite petlju kad pronađete prvog dostupnog trenera
+      if (trainers[trainerKey].name.toLowerCase() === trainerName.toLowerCase()) {
+        trainer = trainers[trainerKey];
+        break;
       }
     }
 
-    let botResponse;
+    if (trainer) {
+      const availableSlots = trainer.available || [];
 
-    if (availableTrainer) {
-      botResponse = `Trener ${availableTrainer} je dostupan u ${time} na datum ${date}.`;
+      if (availableSlots.length > 0) {
+        // Prikaz slobodnih termina u formatu čitljivom za korisnike
+        const slotsList = availableSlots
+          .map((slot) => new Date(slot).toLocaleString('hr-HR'))
+          .join(', ');
+
+        res.json({
+          fulfillmentText: `Trener ${trainerName} ima sljedeće slobodne termine: ${slotsList}.`,
+        });
+      } else {
+        res.json({
+          fulfillmentText: `Nažalost, trener ${trainerName} trenutno nema slobodnih termina.`,
+        });
+      }
     } else {
-      botResponse = `Nažalost, nijedan trener nije dostupan u ${time} na datum ${date}. Molimo pokušajte s drugim terminom.`;
+      res.json({
+        fulfillmentText: `Trener ${trainerName} nije pronađen u našoj bazi. Molimo pokušajte ponovno s drugim imenom.`,
+      });
     }
-
-    res.json({
-      fulfillmentText: botResponse,
-    });
   } catch (error) {
     console.error('Greška pri pristupu Firebase-u:', error);
     res.status(500).json({
-      fulfillmentText: 'Došlo je do greške prilikom proveravanja dostupnosti. Molimo pokušajte ponovo.',
+      fulfillmentText: 'Došlo je do greške prilikom obrade zahtjeva. Molimo pokušajte ponovo.',
     });
   }
 });
