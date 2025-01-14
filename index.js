@@ -1,6 +1,6 @@
-const admin = require('firebase-admin');
 const express = require('express');
 const bodyParser = require('body-parser');
+const fs = require('fs');
 const app = express();
 
 app.set('port', process.env.PORT || 5000);
@@ -9,42 +9,24 @@ app.set('port', process.env.PORT || 5000);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Inicijalizacija Firebase-a
-const serviceAccount = require('./chatbot-3aec8-firebase-adminsdk-ysdwy-a47d11879f.json'); 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://chatbot-3aec8.firebaseio.com',
-});
-
-const db = admin.database(); // Referenca na Realtime Database
+// Učitaj podatke iz lokalnog JSON-a
+const trainersData = JSON.parse(fs.readFileSync('./treneri.json', 'utf-8'));
 
 // Webhook ruta za prikaz slobodnih termina trenera
-app.post('/check_trainer_availability', async (req, res) => {
+app.post('/check_trainer_availability', (req, res) => {
   console.log('Primljen zahtjev:', req.body);
 
-  const trainerName = req.body.queryResult.parameters.trainer; 
+  const trainerName = req.body.queryResult.parameters.trainer; // Ime trenera iz korisničkog unosa
 
   try {
-    // Referenca na Firebase
-    const trainersRef = db.ref('trainers');
-    const snapshot = await trainersRef.once('value');
-    const trainers = snapshot.val();
-
-    let trainer = null;
-
     // Pronađite trenera prema imenu
-    for (const trainerKey of Object.keys(trainers)) {
-      if (trainers[trainerKey].name.toLowerCase() === trainerName.toLowerCase()) {
-        trainer = trainers[trainerKey];
-        break;
-      }
-    }
+    const trainer = trainersData.trainers.find(t => t.name.toLowerCase() === trainerName.toLowerCase());
 
     if (trainer) {
-      const availableSlots = trainer.available || [];
+      const availableSlots = trainer.available_slots || [];
 
       if (availableSlots.length > 0) {
-        // Prikaz slobodnih termina u formatu čitljivom za korisnike
+        // Prikaz slobodnih termina u čitljivom formatu
         const slotsList = availableSlots
           .map((slot) => new Date(slot).toLocaleString('hr-HR'))
           .join(', ');
@@ -63,7 +45,7 @@ app.post('/check_trainer_availability', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Greška pri pristupu Firebase-u:', error);
+    console.error('Greška prilikom obrade zahtjeva:', error);
     res.status(500).json({
       fulfillmentText: 'Došlo je do greške prilikom obrade zahtjeva. Molimo pokušajte ponovo.',
     });
