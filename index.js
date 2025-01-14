@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const serviceAccount = require('./chatbot-3aec8-firebase-adminsdk-ysdwy-a47d11879f.json'); 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://your-database-name.firebaseio.com', // Zameni sa URL-om tvoje baze
+  databaseURL: 'https://chatbot-3aec8.firebaseio.com',
 });
 
 const db = admin.database(); // Referenca na Realtime Database
@@ -22,11 +22,11 @@ const db = admin.database(); // Referenca na Realtime Database
 app.post('/check_trainer_availability', async (req, res) => {
   console.log('Primljen zahtjev:', req.body);
 
-  const trainerName = req.body.queryResult.parameters.trainer; // Pretpostavljamo da se unosi ime trenera
+  const trainerName = req.body.queryResult.parameters.trainer; 
 
   try {
     // Referenca na Firebase
-    const trainersRef = db.ref('trainers'); // Pretpostavimo da su treneri u "trainers" čvoru
+    const trainersRef = db.ref('trainers');
     const snapshot = await trainersRef.once('value');
     const trainers = snapshot.val();
 
