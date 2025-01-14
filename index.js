@@ -5,13 +5,12 @@ const app = express();
 
 app.set('port', process.env.PORT || 5000);
 
-// Obrada JSON podataka
+// Obrada JSON podataka 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Inicijalizacija Firebase-a
-const serviceAccount = require('./path-to-your-firebase-adminsdk.json'); // Zameni sa svojom datotekom
-
+const serviceAccount = require('./chatbot-3aec8-firebase-adminsdk-ysdwy-a47d11879f.json'); 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: 'https://your-database-name.firebaseio.com', // Zameni sa URL-om tvoje baze
