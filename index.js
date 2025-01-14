@@ -16,7 +16,7 @@ const trainersData = JSON.parse(fs.readFileSync('./treneri.json', 'utf-8'));
 app.post('/check_trainer_availability', (req, res) => {
   console.log('Primljen zahtjev:', req.body);
 
-  const trainerName = req.body.queryResult.parameters.trainer; // Ime trenera iz korisničkog unosa
+  const trainerName = req.body.queryResult.parameters.trainers; // Ime trenera iz korisničkog unosa
 
   try {
     // Pronađite trenera prema imenu
